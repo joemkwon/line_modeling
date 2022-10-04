@@ -1,0 +1,45 @@
+# using PDDL, PlanningDomains
+# using SymbolicPlanners
+# import SymbolicPlanners: precompute!, is_precomputed, compute
+
+#using modules locally except for PlanningDomains
+using PlanningDomains
+include("/Users/joekwon/Desktop/line_modeling/PDDL.jl")
+include("/Users/joekwon/Desktop/line_modeling/SymbolicPlanners.jl")
+import SymbolicPlanners: precompute!, is_precomputed, compute
+
+
+# Load domain and problem
+domain_path = "/Users/joekwon/Desktop/line_modeling"
+multi_agent_lines = load_domain(joinpath(domain_path, "domain.pddl"))
+problem_path = "/Users/joekwon/Desktop/line_modeling/2_agent_maps"
+mal_problem = load_problem(joinpath(problem_path, "no_line_3.pddl"))
+
+# Register array theory for gridworld domains
+PDDL.Arrays.@register()
+
+mal_state = initstate(multi_agent_lines, mal_problem)
+mal_spec = Specification(mal_problem)
+
+domain = multi_agent_lines
+state = mal_state
+
+actions = available(domain, state)
+#state = execute(domain, state, pddl"(up(agent1))")
+#c_domain, c_state = compiled(domain, state)
+
+planner = AStarPlanner(WellTankHeuristic())
+
+heuristic = WellTankHeuristic()
+planner = MultiAgentRTDP(heuristic=heuristic, rollout_noise=2.0, n_rollouts=50)
+
+sol = planner(domain, state, mal_spec)
+print(sol.plan)
+
+simulator = StateActionRecorder(100)
+actions, trajectory = simulator(sol, domain, state, mal_spec)
+
+
+
+
+
