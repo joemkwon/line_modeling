@@ -1,6 +1,6 @@
 (define (problem no-line-1)
     (:domain multi_agent_lines)
-    (:objects tank1 tank2 tank3 tank4 tank5 tank6 - tank well1 well2 well3 well4 well5 well6 well7 well8 well9 well10 - well agent1 agent2 agent3 agent4 agent5 agent6 agent7 agent8 - agent)
+    (:objects tank1 tank2 tank3 tank4 tank5 tank6 - tank well1 well2 well3 well4 well5 well6 well7 well8 well9 well10 - well agent1 agent2 agent3 agent4 agent5 agent6 agent7 agent8 - agent finish1 finish2 finish3 finish4 finish5 finish6 finish7 finish8 - finish)
     (:init  
         (= (walls)
             (transpose (bit-mat
@@ -55,43 +55,56 @@
 
         (= (xloc agent1) 12)
         (= (yloc agent1) 5)
-        (not (has-water agent1))
-        (not (has-filled agent1))
-        
+
         (= (xloc agent2) 11)
         (= (yloc agent2) 5)
-        (not (has-water agent2))
-        (not (has-filled agent2))
 
         (= (xloc agent3) 10)
         (= (yloc agent3) 5)
-        (not (has-water agent3))
-        (not (has-filled agent3))
 
         (= (xloc agent4) 9)
         (= (yloc agent4) 5)
-        (not (has-water agent4))
-        (not (has-filled agent4))
 
         (= (xloc agent5) 8)
         (= (yloc agent5) 5)
-        (not (has-water agent5))
-        (not (has-filled agent5))
 
         (= (xloc agent6) 7)
         (= (yloc agent6) 5)
-        (not (has-water agent6))
-        (not (has-filled agent6))
 
         (= (xloc agent7) 6)
         (= (yloc agent7) 5)
-        (not (has-water agent7))
-        (not (has-filled agent7))
 
         (= (xloc agent8) 5)
         (= (yloc agent8) 5)
-        (not (has-water agent8))
-        (not (has-filled agent8)))
 
-    (:goal (and (has-filled agent1) (has-filled agent2) (has-filled agent3) (has-filled agent4) (has-filled agent5) (has-filled agent6) (has-filled agent7) (has-filled agent8)))
+        (= (xloc finish1) 9) 
+        (= (yloc finish1) 14) 
+        (= (xloc finish2) 8) 
+        (= (yloc finish2) 14) 
+        (= (xloc finish3) 7) 
+        (= (yloc finish3) 14) 
+        (= (xloc finish4) 6) 
+        (= (yloc finish4) 14) 
+        (= (xloc finish5) 5) 
+        (= (yloc finish5) 14) 
+        (= (xloc finish6) 4) 
+        (= (yloc finish6) 14) 
+        (= (xloc finish7) 3) 
+        (= (yloc finish7) 14) 
+        (= (xloc finish8) 2) 
+        (= (yloc finish8) 14)
+    )
+
+    (:goal 
+        (and 
+            (has-completed agent1) 
+            (has-completed agent2) 
+            (has-completed agent3) 
+            (has-completed agent4) 
+            (has-completed agent5) 
+            (has-completed agent6) 
+            (has-completed agent7) 
+            (has-completed agent8)
+        )
+    )
 )
