@@ -10,9 +10,9 @@ const data_save_path = "/Users/joekwon/Desktop/line_modeling/all_data/recursive/
 const problem_path = "/Users/joekwon/Desktop/line_modeling/maps"
 
 #variables
-const all_maps = ["debug_1agent.pddl"]
+const all_maps = ["no_line_1_test.pddl"]
 const T = 100
-const N = 1
+const N = 8
 const num_iterations = 1
 boltzmann_policy_parameters = [0.0]
 PDDL.Arrays.@register() 

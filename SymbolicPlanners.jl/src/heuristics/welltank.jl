@@ -40,6 +40,8 @@ function precompute!(h::WellTankHeuristic, domain::Domain, state::State, spec::S
     finishes = PDDL.get_objects(state, :finish)
 
     empty!(h.min_well_tank_dists)
+    empty!(h.min_tank_goal_dists)
+
     well_locs = [get_obj_loc(state, w) for w in wells]
     tank_locs = [get_obj_loc(state, t) for t in tanks]
     finish_locs = [get_obj_loc(state, f) for f in finishes]
@@ -53,19 +55,18 @@ function precompute!(h::WellTankHeuristic, domain::Domain, state::State, spec::S
         h.min_well_tank_dists[w] = min_dist
     end
 
-    # Compute minimum distances between each tank and each agent's goal coordinates
-    empty!(h.min_tank_goal_dists)
-    for (f, finish_loc) in zip(finishes, finish_locs)
+    for (t, tank_loc) in zip(tanks, tank_locs)
         min_dist = typemax(Int)
-        for (t, tank_loc) in zip(tanks, tank_locs)
+        for finish_loc in finish_locs
             tank_goal_dist = sum(abs.(finish_loc .- tank_loc))
             min_dist = min(tank_goal_dist, min_dist)
         end
-        h.min_tank_goal_dists[f] = min_dist
+        h.min_tank_goal_dists[t] = min_dist
     end
 
-    return h 
+    return h
 end
+
 
 #=
     This function checks if the heuristic has already precomputed the minimum distances 
@@ -76,19 +77,7 @@ function is_precomputed(h::WellTankHeuristic,
     return isdefined(h, :min_well_tank_dists) && isdefined(h, :min_tank_goal_dists)
 end
 
-#=
-    This is the main heuristic function that estimates the cost of reaching 
-    the goal state from the current state. It does the following:
-
-    1. If the precomputed distances are not available, it calls precompute! to calculate them.
-    2. Iterates over all agents in the state and checks if they have completed their tasks or not.
-    3. If an agent has completed its task, the heuristic value is 0.
-    4. If the agent hasn't collected water yet, the heuristic value is the minimum distance from any well to
-    any tank. Otherwise, the heuristic calculates the minimum distance for the agent to reach a well 
-    and then a tank, and returns the maximum distance across all agents.
-=#
-function compute(h::WellTankHeuristic, 
-                 domain::Domain, state::State, spec::Specification)
+function compute(h::WellTankHeuristic, domain::Domain, state::State, spec::Specification)
     # Precompute if necessary
     if !is_precomputed(h, domain, state, spec)
         precompute!(h, domain, state, spec)
@@ -105,41 +94,46 @@ function compute(h::WellTankHeuristic,
     for a in agents 
         entire_completed = Compound(Symbol("has-completed"), Term[a])
         task_completed = Compound(Symbol("has-filled"), Term[a])
-        water_collected = Compound(Symbol("has-water"), Term[a])
+        water_collected = state[Compound(Symbol("has-water1"), Term[a])] || state[Compound(Symbol("has-water2"), Term[a])] || state[Compound(Symbol("has-water3"), Term[a])]
             
         #condition, agent has completed the tanks
-        #then return 0
         if state[entire_completed]
-            return 0
+            continue
         end
-        #condition, agent hasn't gotten the water yet
-        if !state[water_collected]
-            return minimum(values(h.min_well_tank_dists)) + minimum(values(h.min_tank_goal_dists))
-        end            
 
         agent_loc = get_obj_loc(state, a)
-
-        #condition, agent got the water and filled it in a tank and now needs to go to the goal
-        if state[task_completed]
-            return minimum(values(h.min_tank_goal_dists))
-        end
-
-        #agent has collected water, but hasn't stored it in a tank yet.
         agent_dist = Inf
-        for w in wells
-            well_loc = get_obj_loc(state, w)
-            agent_well_dist = sum(abs.(well_loc .- agent_loc))
-            for t in tanks
-                tank_loc = get_obj_loc(state, t)
-                well_tank_dist = sum(abs.(well_loc .- tank_loc))
-                for f in finishes
-                    finish_loc = get_obj_loc(state, f)
-                    tank_goal_dist = sum(abs.(finish_loc .- tank_loc))
-                    agent_dist = min(agent_dist, agent_well_dist + well_tank_dist + tank_goal_dist)
-                end
-                max_dist = max(max_dist, agent_dist)
-            end
+
+        #condition, agent hasn't gotten the water yet
+        if !water_collected
+            min_well_dist, min_well = find_nearest_obj(agent_loc, wells, state)
+            min_tank_dist = h.min_well_tank_dists[min_well]
+            min_goal_dist = minimum([h.min_tank_goal_dists[t] for t in keys(h.min_tank_goal_dists)])
+            agent_dist = min_well_dist + min_tank_dist + min_goal_dist
+        elseif !state[task_completed] # agent has collected water, but hasn't stored it in a tank yet
+            min_tank_dist, min_tank = find_nearest_obj(agent_loc, tanks, state)
+            min_goal_dist = h.min_tank_goal_dists[min_tank]
+            agent_dist = min_tank_dist + min_goal_dist
+        else # agent has filled the tank with water
+            min_goal_dist, _ = find_nearest_obj(agent_loc, finishes, state)
+            agent_dist = min_goal_dist
         end
+
+        max_dist = max(max_dist, agent_dist)
     end 
     return max_dist
+end
+
+function find_nearest_obj(agent_loc, objs, state)
+    min_dist = Inf
+    min_obj = nothing
+    for obj in objs
+        obj_loc = get_obj_loc(state, obj)
+        dist = sum(abs.(obj_loc .- agent_loc))
+        if dist < min_dist
+            min_dist = dist
+            min_obj = obj
+        end
+    end
+    return min_dist, min_obj
 end
